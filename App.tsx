@@ -1,118 +1,76 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useEffect} from 'react';
+import {View, Text} from 'react-native';
+import BLEPeripheral from 'react-native-ble-peripheral';
+import {Buffer} from 'buffer';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const App = () => {
+  useEffect(() => {
+    const initPeripheral = async () => {
+      try {
+        // Inisialisasi BLE Peripheral
+        await BLEPeripheral.initialize();
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+        // Definisi UUID untuk layanan dan karakteristik
+        const SERVICE_UUID = '0000180F-0000-1000-8000-00805F9B34FB'; // Contoh UUID untuk layanan
+        const CHARACTERISTIC_UUID = '00002A19-0000-1000-8000-00805F9B34FB'; // Contoh UUID untuk karakteristik
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+        // Membuat layanan
+        const service = {
+          uuid: SERVICE_UUID,
+          characteristics: [
+            {
+              uuid: CHARACTERISTIC_UUID,
+              value: 'Initial value',
+              permissions: {
+                read: true,
+                write: true,
+                // Berikan izin lainnya sesuai kebutuhan Anda
+              },
+              onReadRequest: async () => {
+                // Logika untuk menangani permintaan membaca karakteristik
+                console.log('Read request for characteristic');
+                return Buffer.from('Read value').toString('base64');
+              },
+              // ...
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+              onWriteRequest: async newValue => {
+                // Logika untuk menangani permintaan menulis karakteristik
+                console.log('Write request for characteristic');
+                console.log(
+                  'New value:',
+                  Buffer.from(newValue, 'base64').toString(),
+                );
+              },
+            },
+          ],
+        };
 
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+        // Menambahkan layanan
+        await BLEPeripheral.addService(service);
+        console.log('Service added successfully');
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+        // Memulai perangkat sebagai Peripheral
+        await BLEPeripheral.start();
+        console.log('Peripheral started');
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+
+    initPeripheral();
+  }, []);
+
+  const containerStyle = {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   };
 
   return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+    <View style={containerStyle}>
+      <Text>BLE Peripheral Example</Text>
+    </View>
   );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+};
 
 export default App;
